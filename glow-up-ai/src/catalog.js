@@ -11,6 +11,13 @@
  * changent parfois sans préavis.
  *
  * Respecte le schéma Product défini dans matching-engine.js
+ *
+ * PHOTOS PRODUIT : ajoute un champ `image: "/products/<id>.jpg"` sur un
+ * produit une fois que tu as une vraie photo (achetée/licenciée, fournie par
+ * la marque, ou prise par toi) placée dans `public/products/<id>.jpg` du
+ * projet Vite. Sans ce champ, l'app affiche automatiquement une icône de
+ * remplacement selon le format (sérum/crème/gel/lotion) — aucun lien externe
+ * n'est utilisé, pour éviter les images cassées ou les soucis de droits.
  */
 
 export const REAL_PRODUCTS = [
@@ -29,6 +36,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["non_comedogene", "hypoallergenique"],
     keyIngredients: ["Niacinamide (~2-3%)", "LHA", "Phylobioma"],
     format: "creme",
+    zones: ["visage", "zone_t"],
     note: "Anti-imperfections, réduit points noirs et marques post-acné. Éviter le contour des yeux.",
   },
   {
@@ -46,6 +54,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["sans_parfum", "non_comedogene"],
     keyIngredients: ["Céramides NP/AP/EOP", "Niacinamide", "Acide hyaluronique"],
     format: "creme",
+    zones: ["visage"],
     note: "Technologie MVE : libération progressive des actifs sur 24h. Convient aussi aux peaux desséchées par un traitement anti-acné.",
   },
   {
@@ -63,6 +72,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["sans_parfum", "sans_savon"],
     keyIngredients: ["Eau thermale d'Avène", "TRP-Regulin™"],
     format: "lotion",
+    zones: ["visage"],
     note: "Lait nettoyant sans rinçage, formulé pour les peaux sujettes aux rougeurs et sensibles.",
   },
   {
@@ -80,6 +90,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Peptides de collagène", "Vitamine B3 (niacinamide)", "Vitamine Cg"],
     format: "serum",
+    zones: ["visage"],
     note: "Double sérum raffermissant + éclat, pensé pour les peaux matures dès l'apparition des premiers signes de l'âge.",
   },
   {
@@ -97,6 +108,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Collagène", "Peptides de soja", "Melanin-Block", "SPF 30"],
     format: "creme",
+    zones: ["visage"],
     note: "Crème de jour raffermissante avec protection solaire intégrée, cible aussi les taches pigmentaires.",
   },
   {
@@ -114,6 +126,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["sans_parfum"],
     keyIngredients: ["Mucine d'escargot (96%)", "Acide hyaluronique sodique", "Panthénol"],
     format: "serum",
+    zones: ["visage"],
     note: "Essence emblématique de la routine coréenne, renforce la barrière cutanée et apaise les peaux sensibles ou post-acnéiques.",
   },
   {
@@ -132,6 +145,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["vegan"],
     keyIngredients: ["Phyto-mucine (végane)", "Céramides", "Peptides"],
     format: "serum",
+    zones: ["visage"],
     note: "Alternative végane à la mucine d'escargot, avec un profil ingrédients plus complet (céramides, peptides).",
   },
   {
@@ -150,6 +164,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Niacinamide (12%)"],
     format: "serum",
+    zones: ["visage"],
     note: "Cible les rougeurs liées aux imperfections (marques post-acné) — la marque déconseille ce sérum pour les rougeurs d'hypersensibilité/rosacée.",
   },
   {
@@ -168,6 +183,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["sans_parfum"],
     keyIngredients: ["Niacinamide (10%)", "Zinc PCA", "Cuivre PCA", "Acide hyaluronique"],
     format: "serum",
+    zones: ["visage", "zone_t"],
     note: "Formule naturelle française, resserre les pores et régule le sébum. Bon rapport qualité-prix pour du 10% niacinamide.",
   },
   {
@@ -186,6 +202,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Niacinamide (10%)", "Zinc PCA"],
     format: "serum",
+    zones: ["visage", "zone_t"],
     note: "Référence du marché pour son rapport prix/efficacité — bon produit d'entrée de gamme pour un MVP.",
   },
   {
@@ -204,6 +221,7 @@ export const REAL_PRODUCTS = [
     lifestyle: ["sans_parfum"],
     keyIngredients: ["Bakuchiol", "Complexe anti-rougeurs Rosactiv"],
     format: "serum",
+    zones: ["visage"],
     note: "Double action anti-rougeurs et anti-âge, pensé pour les peaux sensibles à tendance couperosique.",
   },
   {
@@ -222,6 +240,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Acide hyaluronique pur"],
     format: "serum",
+    zones: ["visage"],
     note: "Gamme anti-âge très établie en pharmacie ; prix à reconfirmer selon le format exact (sérum vs. booster vs. crème).",
   },
   {
@@ -240,6 +259,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Centella Asiatica", "Madecassoside", "Panthénol"],
     format: "creme",
+    zones: ["visage"],
     note: "Crème apaisante barrière, référence coréenne du soin à la centella asiatica pour peaux sensibles/réactives.",
   },
   {
@@ -258,6 +278,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Propolis (60%)", "Niacinamide (2%)"],
     format: "serum",
+    zones: ["visage", "zone_t"],
     note: "Best-seller K-beauty, texture miel, régule le sébum et resserre les pores tout en apaisant.",
   },
   {
@@ -276,6 +297,7 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: ["Ginseng"],
     format: "creme",
+    zones: ["visage"],
     note: "Marque hybride franco-coréenne, positionnement anti-âge premium — bon pont entre les styles coréen et age perfect.",
   },
   {
@@ -294,25 +316,190 @@ export const REAL_PRODUCTS = [
     lifestyle: [],
     keyIngredients: [],
     format: "creme",
+    zones: ["visage"],
     note: "Marque dermo-cosmétique française spécialisée rougeurs/couperose. Prix à reconfirmer directement chez le distributeur.",
+  },
+  {
+    id: "lrp_cicaplast_mains",
+    name: "La Roche-Posay Cicaplast Mains",
+    brand: "La Roche-Posay",
+    price: 6.49,
+    priceConfirmed: true,
+    volume: "50 ml",
+    skinTypes: ["toutes"],
+    concerns: ["rougeurs"],
+    pores: ["toutes"],
+    categories: ["traitement", "hydratation"],
+    styles: ["classique", "toutes"],
+    ageRange: [12, 90],
+    lifestyle: ["sans_parfum"],
+    format: "creme",
+    zones: ["mains"],
+    keyIngredients: ["Niacinamide (4%)", "Glycérine (30%)", "Beurre de karité"],
+    note: "Crème barrière réparatrice pour mains sur-sollicitées, sèches ou abîmées (eczéma, froid, lavages fréquents). Réduit rougeurs et rugosités dès la 1ère application.",
+  },
+  {
+    id: "guerlain_abeille_royale_mains",
+    name: "Guerlain Abeille Royale Baume Réparateur Jeunesse Des Mains",
+    brand: "Guerlain",
+    price: 36.95,
+    priceConfirmed: true,
+    volume: "75 ml",
+    skinTypes: ["toutes"],
+    concerns: ["rides"],
+    pores: ["toutes"],
+    categories: ["traitement"],
+    styles: ["age_perfect"],
+    ageRange: [35, 75],
+    lifestyle: [],
+    format: "creme",
+    zones: ["mains"],
+    keyIngredients: ["Concentré de miels", "Gelée royale", "Beurre de karité"],
+    note: "Positionnement anti-âge premium pour les mains : raffermit, lisse et repulpe la peau, fortifie les ongles. +103% d'hydratation mesurée après 6h.",
+  },
+  {
+    id: "clarins_hand_nail",
+    name: "Clarins Hand and Nail Treatment Cream",
+    brand: "Clarins",
+    price: 38.0,
+    priceConfirmed: false,
+    volume: "100 ml",
+    skinTypes: ["toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["hydratation"],
+    styles: ["classique", "toutes"],
+    ageRange: [18, 90],
+    lifestyle: ["vegan"],
+    format: "creme",
+    zones: ["mains"],
+    keyIngredients: ["Beurre de karité", "Huile de sésame", "Extrait de myrrhe"],
+    note: "Best-seller Clarins, texture légère non grasse, protège du dessèchement et fortifie ongles/cuticules. Prix France à reconfirmer (donnée trouvée en $ US).",
+  },
+  {
+    id: "avene_coldcream_mains",
+    name: "Avène Cold Cream Crème Mains Concentrée",
+    brand: "Avène",
+    price: 7.0,
+    priceConfirmed: false,
+    volume: "50 ml",
+    skinTypes: ["toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["hydratation"],
+    styles: ["classique", "toutes"],
+    ageRange: [2, 90],
+    lifestyle: ["sans_parfum"],
+    format: "creme",
+    zones: ["mains"],
+    keyIngredients: ["Eau thermale d'Avène", "Sucralfate", "Beurre de karité"],
+    note: "Pour mains très sèches, gercées ou abîmées par le froid/lavages fréquents. Convient dès 2 ans, toute la famille. Prix estimé, à reconfirmer.",
+  },
+  {
+    id: "savonnerie_nyons_mains",
+    name: "La Savonnerie de Nyons Crème Mains Aloe Vera Bio",
+    brand: "La Savonnerie de Nyons",
+    price: 12.9,
+    priceConfirmed: false,
+    volume: "75 ml",
+    skinTypes: ["toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["hydratation"],
+    styles: ["classique", "toutes"],
+    ageRange: [12, 90],
+    lifestyle: ["bio"],
+    format: "creme",
+    zones: ["mains"],
+    keyIngredients: ["Aloe vera bio", "Huile d'argan bio", "Beurre de karité"],
+    note: "Petite savonnerie artisanale française (Nyons, Drôme). Prix aligné sur le format 75ml de la gamme (confirmé sur une variante voisine, à revérifier pour l'Aloe Vera).",
+  },
+  {
+    id: "payot_micropeeling_pieds",
+    name: "Payot Baume Fondant Micro-Peeling Pieds",
+    brand: "Payot",
+    price: 15.0,
+    priceConfirmed: false,
+    volume: "40 ml",
+    skinTypes: ["toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["traitement"],
+    styles: ["classique", "toutes"],
+    ageRange: [18, 90],
+    lifestyle: [],
+    format: "creme",
+    zones: ["pieds"],
+    keyIngredients: ["Urée (10%)", "Huile de graines d'écume des prés"],
+    note: "Kératolytique pour talons secs, rugosités et callosités. L'urée à 10% est le dosage jugé idéal pour l'efficacité sans irriter. Prix estimé, à reconfirmer.",
+  },
+  {
+    id: "cicamanuka_mains",
+    name: "CicaManuka Soin Mains Réparateur Miel de Manuka IAA15+",
+    brand: "CicaManuka",
+    price: 8.9,
+    priceConfirmed: true,
+    volume: "50 ml",
+    skinTypes: ["seche", "toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["hydratation", "traitement"],
+    styles: ["classique", "toutes"],
+    ageRange: [15, 90],
+    lifestyle: ["bio"],
+    format: "creme",
+    zones: ["mains"],
+    keyIngredients: ["Miel de Manuka IAA15+ (5%)", "Beurre de karité bio", "Huile d'olive bio"],
+    note: "Miel de Manuka néo-zélandais à indice IAA garanti (concentration en méthylglyoxal, action apaisante/réparatrice certifiée). Pour mains sèches, fragilisées, agressées par le quotidien. Marque française (Lille).",
+  },
+  {
+    id: "cicamanuka_pieds",
+    name: "CicaManuka Crème Pieds Réparatrice Miel de Manuka IAA15+",
+    brand: "CicaManuka",
+    price: 9.99,
+    priceConfirmed: true,
+    volume: "75 ml",
+    skinTypes: ["seche", "toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["hydratation", "traitement"],
+    styles: ["classique", "toutes"],
+    ageRange: [3, 90],
+    lifestyle: ["bio"],
+    format: "creme",
+    zones: ["pieds"],
+    keyIngredients: [
+      "Miel de Manuka IAA15+",
+      "Beurre de karité bio",
+      "Aloe vera",
+      "Acide citrique & gluconolactone (kératolytique)",
+    ],
+    note: "Réduit les callosités, apaise les talons abîmés/fendillés et aide à prévenir les crevasses. Convient dès 3 ans, aux femmes enceintes et allaitantes. Prix confirmé entre 9,99€ et 10,99€ selon le distributeur.",
   },
 ];
 
 /**
- * Note sur AIME : la marque est surtout positionnée sur les compléments
- * alimentaires beauté (ex. "French Glow" pour la sensibilité/rougeurs) plutôt
- * que sur des soins topiques avec fiches ingrédients/prix vérifiables. Si tu
- * veux l'inclure, il faudra soit republier un vrai soin visage de leur
- * catalogue (baume nettoyant, sérum antioxydant, crème barrière, SPF) après
- * vérification directe sur aime.co, soit envisager une catégorie "compléments"
- * séparée du schéma produit actuel (qui suppose un soin topique).
+ * Note sur les concerns des soins mains/pieds : la taxonomie actuelle
+ * (acne, points_noirs, rougeurs, rides, taches, exces_sebum) a été pensée
+ * pour le visage. La plupart des soins mains/pieds ci-dessus répondent à des
+ * problématiques qui n'y figurent pas (sécheresse, callosités, gerçures) —
+ * j'ai laissé `concerns: []` plutôt que de forcer un tag inexact. Résultat
+ * concret : ces produits seront pénalisés sur le critère "concerns" (33% du
+ * score) même quand ils sont parfaitement pertinents pour la zone demandée.
+ * Pour un vrai lancement de la fonctionnalité mains/pieds, il faudrait
+ * ajouter des concerns dédiés au corps (ex. "secheresse", "callosites",
+ * "gercures") au moteur de matching plutôt que de réutiliser ceux du visage.
  */
 
 /**
- * Ce qu'il reste à compléter pour une couverture correcte des 3 styles :
- * - Un nettoyant "coréen" (ex. huile démaquillante de type Heimish/Beauty of
- *   Joseon) pour le double-cleanse — je n'ai pas encore vérifié de fiche
- *   ingrédients fiable pour un produit précis, à rechercher avant intégration.
- * - Un traitement "classique" ciblant spécifiquement les rougeurs (au-delà
- *   du nettoyant Avène) si tu veux équilibrer les catégories par style.
+ * Marques demandées mais non intégrées faute de données fiables trouvées :
+ * Yumi, Skybottle, Nijiko, Univeda, Alvadiem, Douce Nature. Idem pour un
+ * produit mains/pieds précis chez Roger & Gallet ou Aroma-Zone (marques
+ * réelles, mais je n'ai pas trouvé de fiche produit + prix + ingrédients
+ * assez fiable pour les intégrer sans risquer d'inventer des détails).
+ *
+ * CicaManuka a une gamme plus large que les 2 produits ici (mains + pieds) :
+ * baume corps IAA10+, crème apaisante visage/corps IAA15+, crème réparatrice
+ * IAA10+, soin lèvres, sérum régénérant visage. Pas encore intégrés — à
+ * ajouter si tu veux enrichir encore le visage/corps avec cette marque.
  */

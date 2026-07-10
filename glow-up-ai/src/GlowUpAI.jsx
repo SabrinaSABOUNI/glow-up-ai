@@ -160,6 +160,16 @@ const FORMAT_OPTIONS = [
   { key: "lotion", label: "Lotion", emoji: "🍶" },
 ];
 
+// Zone du corps/visage à traiter
+const ZONE_OPTIONS = [
+  { key: "visage", label: "Visage complet", emoji: "🙂" },
+  { key: "yeux", label: "Contours des yeux", emoji: "👁️" },
+  { key: "zone_t", label: "Nez et zone T", emoji: "👃" },
+  { key: "cou", label: "Cou", emoji: "🧣" },
+  { key: "mains", label: "Mains", emoji: "🤲" },
+  { key: "pieds", label: "Pieds", emoji: "🦶" },
+];
+
 // Modernized routine "styles" — the philosophy/method the user wants to follow
 const STYLE_OPTIONS = [
   { key: "classique", label: "Classique", emoji: "🤍" },
@@ -210,6 +220,14 @@ const STORES = [
     hours: "Ouvert · Ferme à 20:20",
   },
 ];
+
+// Construit un lien Google Maps "itinéraire" fonctionnel à partir du nom + de
+// l'adresse (on retire le numéro de téléphone accolé après le " · ").
+function directionsUrl(store) {
+  const streetAddr = store.addr.split(" · ")[0];
+  const query = encodeURIComponent(`${store.name}, ${streetAddr}, Paris`);
+  return `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+}
 
 const CHAT_QUICK_REPLIES = [
   "Ce produit convient-il à ma peau ?",
@@ -280,6 +298,8 @@ export default function GlowUpAI() {
       routine: [],
       style: "classique",
       format: "",
+      zone: "",
+      entryPath: "",
       firstName: "Camille",
     });
   };
@@ -293,6 +313,8 @@ export default function GlowUpAI() {
     routine: [],
     style: "classique",
     format: "",
+    zone: "",
+    entryPath: "",
     firstName: "Camille",
   });
   const [liked, setLiked] = useState({});
@@ -300,6 +322,14 @@ export default function GlowUpAI() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [city, setCity] = useState("");
+  const searchStoresNearby = () => {
+    if (!city.trim()) return;
+    const query = encodeURIComponent(`pharmacie ${city.trim()}`);
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${query}`,
+      "_blank"
+    );
+  };
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -349,6 +379,7 @@ export default function GlowUpAI() {
           routine: qa.routine?.length ? qa.routine : a.routine,
           style: qa.style || a.style,
           format: qa.format || a.format,
+          zone: qa.zone || a.zone,
         }));
       }
       const { data: favs } = await supabase
@@ -378,6 +409,7 @@ export default function GlowUpAI() {
       routine: answers.routine,
       style: answers.style,
       format: answers.format || null,
+      zone: answers.zone || null,
       updated_at: new Date().toISOString(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -507,6 +539,37 @@ export default function GlowUpAI() {
   const relatedProducts = rankedProducts
     .filter((r) => r.product.id !== selectedProduct?.id)
     .slice(0, 3);
+
+  // Assigne un vrai produit du classement à chaque étape de la routine
+  // (nettoyage → traitement → hydratation, en boucle si plus d'étapes).
+  const ROUTINE_CATEGORY_CYCLE = [
+    "nettoyage",
+    "traitement",
+    "hydratation",
+    "traitement",
+    "hydratation",
+  ];
+  const routineSteps = (ROUTINE_META[answers.style] || ROUTINE_META.classique)
+    .steps;
+  const routineProductPicks = useMemo(() => {
+    const used = new Set();
+    const picks = [];
+    for (let i = 0; i < routineSteps; i++) {
+      const cat = ROUTINE_CATEGORY_CYCLE[i % ROUTINE_CATEGORY_CYCLE.length];
+      let match = rankedProducts.find(
+        (r) => r.product.categories.includes(cat) && !used.has(r.product.id)
+      );
+      if (!match) {
+        match = rankedProducts.find((r) => !used.has(r.product.id));
+      }
+      if (match) used.add(match.product.id);
+      picks.push(match ? match.product : null);
+    }
+    return picks;
+  }, [rankedProducts, routineSteps]);
+
+  const formatEmoji = (product) =>
+    FORMAT_OPTIONS.find((f) => f.key === product?.format)?.emoji || "🧴";
 
   return (
     <div className="w-full flex items-center justify-center bg-neutral-100 py-6">
@@ -682,7 +745,10 @@ export default function GlowUpAI() {
               </h2>
               <div className="flex flex-col gap-4 w-full px-2">
                 <button
-                  onClick={() => goTo("age")}
+                  onClick={() => {
+                    setAnswers((a) => ({ ...a, entryPath: "diagnostic" }));
+                    goTo("zone");
+                  }}
                   className="bg-white/90 rounded-2xl px-5 py-4 text-left shadow-sm active:scale-95 transition"
                 >
                   <p className="font-semibold text-neutral-900">
@@ -694,7 +760,10 @@ export default function GlowUpAI() {
                   </p>
                 </button>
                 <button
-                  onClick={() => goTo("format")}
+                  onClick={() => {
+                    setAnswers((a) => ({ ...a, entryPath: "produit" }));
+                    goTo("zone");
+                  }}
                   className="bg-white/90 rounded-2xl px-5 py-4 text-left shadow-sm active:scale-95 transition"
                 >
                   <p className="font-semibold text-neutral-900">
@@ -704,6 +773,49 @@ export default function GlowUpAI() {
                     Sérum, crème, gel... partez du produit que vous cherchez.
                   </p>
                 </button>
+              </div>
+            </div>
+          </ScreenShell>
+        )}
+
+        {screen === "zone" && (
+          <ScreenShell
+            gradient={GRAD.sage}
+            top={<Logo />}
+            bottom={
+              <div className="flex items-center gap-4">
+                <BackArrow onClick={goBack} />
+                <Pill
+                  onClick={() =>
+                    goTo(answers.entryPath === "produit" ? "format" : "age")
+                  }
+                  className="flex-1 text-center"
+                >
+                  page suivante
+                </Pill>
+              </div>
+            }
+          >
+            <div className="flex flex-col items-center text-center gap-8 mt-6">
+              <div className="w-52 h-52 rounded-full bg-white/20 border-4 border-white/30 flex items-center justify-center">
+                <span className="text-white text-4xl">🎯</span>
+              </div>
+              <h2 className="text-white text-2xl font-semibold leading-tight">
+                Quelle zone souhaitez-vous
+                <br />
+                traiter ?
+              </h2>
+              <div className="flex gap-4 flex-wrap justify-center">
+                {ZONE_OPTIONS.map((z) => (
+                  <OptionCircle
+                    key={z.key}
+                    label={z.label}
+                    selected={answers.zone === z.key}
+                    onClick={() => setAnswers((a) => ({ ...a, zone: z.key }))}
+                  >
+                    <span className="text-2xl">{z.emoji}</span>
+                  </OptionCircle>
+                ))}
               </div>
             </div>
           </ScreenShell>
@@ -999,9 +1111,9 @@ export default function GlowUpAI() {
                 <span className="text-white text-4xl">🧴</span>
               </div>
               <h2 className="text-white text-2xl font-semibold leading-tight">
-                Quelle routine souhaitez vous
+                Que souhaitez-vous
                 <br />
-                mettre en place
+                pour votre peau ?
               </h2>
               <div className="flex gap-4 flex-wrap justify-center">
                 {ROUTINE_OPTIONS.map((t) => (
@@ -1413,7 +1525,7 @@ export default function GlowUpAI() {
                 </p>
               )}
 
-              <p className="mt-6 text-sm text-neutral-800">
+              <p className="mt-6 text-sm text-neutral-800 font-bold">
                 Produits associés avec pourcentage de pertinence
               </p>
               <div className="flex gap-3 mt-2">
@@ -1452,9 +1564,26 @@ export default function GlowUpAI() {
                 {STYLE_OPTIONS.find((s) => s.key === answers.style)?.label ||
                   "personnalisée"}
               </h2>
-              <div className="mt-4 rounded-xl bg-neutral-800 aspect-video flex items-center justify-center text-white text-sm">
-                ▶ vidéo tuto
-              </div>
+              <a
+                href="https://www.youtube.com/watch?v=hKmkPSsrcaM"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 rounded-xl overflow-hidden relative block aspect-video group"
+              >
+                <img
+                  src="https://img.youtube.com/vi/hKmkPSsrcaM/hqdefault.jpg"
+                  alt="Vidéo : les bases d'une routine de nettoyage du visage"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-active:bg-black/40">
+                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                    <span className="text-2xl text-neutral-900 ml-0.5">▶</span>
+                  </div>
+                </div>
+                <span className="absolute bottom-1.5 left-2 text-[10px] text-white bg-black/50 px-1.5 py-0.5 rounded">
+                  Routine de nettoyage — les bases
+                </span>
+              </a>
               <div className="flex justify-around mt-4 text-xs text-neutral-800">
                 <button
                   className="flex flex-col items-center gap-1"
@@ -1486,15 +1615,27 @@ export default function GlowUpAI() {
                   <p className="bg-pink-300 text-white text-center rounded-full py-1 font-bold text-sm mb-2">
                     Matin
                   </p>
-                  {Array.from(
-                    { length: (ROUTINE_META[answers.style] || ROUTINE_META.classique).steps },
-                    (_, i) => i + 1
-                  ).map((n) => (
-                    <div key={n} className="flex items-center gap-2 mb-2">
-                      <span className="w-6 h-6 rounded-full border border-neutral-700 flex items-center justify-center text-xs">
-                        {n}
-                      </span>
-                      <div className="w-6 h-8 bg-white rounded shadow" />
+                  {routineProductPicks.map((p, i) => (
+                    <div key={i} className="mb-2.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-4 h-4 rounded-full border border-neutral-700 flex items-center justify-center text-[9px] shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="w-9 h-11 bg-white rounded shadow overflow-hidden flex items-center justify-center shrink-0">
+                          {p?.image ? (
+                            <img
+                              src={p.image}
+                              alt={p.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-base">{formatEmoji(p)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-neutral-700 leading-tight line-clamp-2">
+                        {p?.name || "—"}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -1502,15 +1643,27 @@ export default function GlowUpAI() {
                   <p className="bg-pink-300 text-white text-center rounded-full py-1 font-bold text-sm mb-2">
                     Soir
                   </p>
-                  {Array.from(
-                    { length: (ROUTINE_META[answers.style] || ROUTINE_META.classique).steps },
-                    (_, i) => i + 1
-                  ).map((n) => (
-                    <div key={n} className="flex items-center gap-2 mb-2">
-                      <span className="w-6 h-6 rounded-full border border-neutral-700 flex items-center justify-center text-xs">
-                        {n}
-                      </span>
-                      <div className="w-6 h-8 bg-white rounded shadow" />
+                  {routineProductPicks.map((p, i) => (
+                    <div key={i} className="mb-2.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-4 h-4 rounded-full border border-neutral-700 flex items-center justify-center text-[9px] shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="w-9 h-11 bg-white rounded shadow overflow-hidden flex items-center justify-center shrink-0">
+                          {p?.image ? (
+                            <img
+                              src={p.image}
+                              alt={p.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-base">{formatEmoji(p)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-neutral-700 leading-tight line-clamp-2">
+                        {p?.name || "—"}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -1619,13 +1772,21 @@ export default function GlowUpAI() {
                 Où shoper tes produits
               </h2>
               <div className="flex items-center gap-2 bg-white/80 rounded-full px-4 py-3">
-                <MapPin size={16} className="text-neutral-600" />
+                <MapPin size={16} className="text-neutral-600 shrink-0" />
                 <input
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && searchStoresNearby()}
                   placeholder="Chercher ville, rue, code postal..."
                   className="bg-transparent outline-none text-sm flex-1 text-neutral-800"
                 />
+                <button
+                  onClick={searchStoresNearby}
+                  disabled={!city.trim()}
+                  className="text-xs font-medium text-pink-600 disabled:text-neutral-400 shrink-0"
+                >
+                  Rechercher
+                </button>
               </div>
               <p className="text-xs text-neutral-800">
                 Localiser un magasin dans un rayon de 30 Km
@@ -1638,9 +1799,14 @@ export default function GlowUpAI() {
                       <p className="text-xs text-white/70">{s.addr}</p>
                       <p className="text-xs text-green-400">{s.hours}</p>
                     </div>
-                    <span className="text-[10px] text-blue-300 underline shrink-0">
+                    <a
+                      href={directionsUrl(s)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-blue-300 underline shrink-0"
+                    >
                       Itinéraire
-                    </span>
+                    </a>
                   </div>
                 ))}
               </div>
