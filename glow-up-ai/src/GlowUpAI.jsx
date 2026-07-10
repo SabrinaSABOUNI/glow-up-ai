@@ -988,7 +988,16 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("pores")} className="flex-1 text-center">
+                  <Pill
+                    onClick={() =>
+                      goTo(
+                        answers.zone === "visage" || answers.zone === "zone_t"
+                          ? "pores"
+                          : "concerns"
+                      )
+                    }
+                    className="flex-1 text-center"
+                  >
                     page suivante
                   </Pill>
                 </div>
@@ -1001,7 +1010,7 @@ export default function GlowUpAI() {
                 <span className="text-white text-6xl font-bold">T</span>
               </div>
               <h2 className="text-white text-2xl font-semibold">
-                Votre peau est plutôt:
+                Votre peau a tendance à être:
               </h2>
               <div className="flex gap-6">
                 {SKIN_TYPES.map((t) => (
