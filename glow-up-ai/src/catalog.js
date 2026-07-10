@@ -476,6 +476,101 @@ export const REAL_PRODUCTS = [
     ],
     note: "Réduit les callosités, apaise les talons abîmés/fendillés et aide à prévenir les crevasses. Convient dès 3 ans, aux femmes enceintes et allaitantes. Prix confirmé entre 9,99€ et 10,99€ selon le distributeur.",
   },
+  {
+    id: "typology_serum_yeux_l33",
+    name: "Typology Sérum Cernes et Poches L33",
+    brand: "Typology",
+    price: 16.9,
+    priceConfirmed: false,
+    volume: "15 ml",
+    skinTypes: ["toutes"],
+    concerns: [],
+    pores: ["toutes"],
+    categories: ["traitement"],
+    styles: ["classique", "toutes"],
+    ageRange: [18, 70],
+    lifestyle: [],
+    format: "serum",
+    zones: ["yeux"],
+    keyIngredients: ["Caféine (5%)", "Niacinamide (5%)", "Extrait d'Albizia Julibrissin"],
+    note: "Cible spécifiquement les cernes vasculaires (bleutés/violacés) et les poches — n'agit pas sur les cernes bruns pigmentaires ni les cernes creux. Non contre-indiqué grossesse/allaitement.",
+  },
+  {
+    id: "caudalie_creme_yeux_premier_cru",
+    name: "Caudalie La Crème Yeux Premier Cru",
+    brand: "Caudalie",
+    price: 42.0,
+    priceConfirmed: false,
+    volume: "15 ml",
+    skinTypes: ["toutes"],
+    concerns: ["rides"],
+    pores: ["toutes"],
+    categories: ["traitement"],
+    styles: ["age_perfect", "toutes"],
+    ageRange: [35, 75],
+    lifestyle: [],
+    format: "creme",
+    zones: ["yeux"],
+    keyIngredients: ["Acide hyaluronique", "Brevet Longévité (Caudalie x Harvard Medical School)", "Nacres 100% naturelles"],
+    note: "Embout métallique massant décongestionnant. Corrige rides du contour des yeux et des lèvres, réduit cernes et poches.",
+  },
+  {
+    id: "cosrx_snail_peptide_eye",
+    name: "COSRX Advanced Snail Peptide Eye Cream",
+    brand: "COSRX",
+    price: 17.0,
+    priceConfirmed: false,
+    volume: "25 ml",
+    skinTypes: ["toutes"],
+    concerns: ["rides"],
+    pores: ["toutes"],
+    categories: ["traitement", "hydratation"],
+    styles: ["coreenne"],
+    ageRange: [18, 65],
+    lifestyle: [],
+    format: "creme",
+    zones: ["yeux"],
+    keyIngredients: ["Mucine d'escargot", "Complexe 5 peptides", "Niacinamide", "Acide hyaluronique"],
+    note: "Extension de l'essence Snail 96. Formule légère, non testée sur animaux, contenant utilisée hors du contact direct avec l'œil.",
+  },
+  {
+    id: "beautyofjoseon_revive_eye",
+    name: "Beauty of Joseon Revive Eye Serum : Ginseng + Retinal",
+    brand: "Beauty of Joseon",
+    price: 19.0,
+    priceConfirmed: false,
+    volume: "30 ml",
+    skinTypes: ["toutes"],
+    concerns: ["rides"],
+    pores: ["toutes"],
+    categories: ["traitement"],
+    styles: ["coreenne", "age_perfect"],
+    ageRange: [25, 65],
+    lifestyle: [],
+    format: "serum",
+    zones: ["yeux"],
+    keyIngredients: ["Ginseng", "Rétinal", "Galactomyces Ferment Filtrate"],
+    note: "⚠️ Contient du rétinal (rétinoïde) — à introduire progressivement, à éviter en cas de grossesse/allaitement (à vérifier sur l'emballage) et à ne jamais combiner avec un autre rétinoïde.",
+  },
+  {
+    id: "clarins_concentre_cou_decollete",
+    name: "Clarins Concentré Décolleté et Cou Anti-Tache Multi-Intensive",
+    brand: "Clarins",
+    price: 94.0,
+    priceConfirmed: true,
+    volume: "75 ml",
+    skinTypes: ["toutes"],
+    concerns: ["rides", "taches"],
+    pores: ["toutes"],
+    categories: ["traitement"],
+    styles: ["age_perfect"],
+    ageRange: [50, 85],
+    lifestyle: [],
+    format: "creme",
+    zones: ["cou"],
+    keyIngredients: ["Extraits végétaux redensifiants", "Complexe anti-taches"],
+    note: "Ligne Multi-Intensive pensée pour les peaux matures (50 ans et +) : redensifie, lisse, atténue les taches du cou et du décolleté. Positionnement premium.",
+  },
 ];
 
 /**
@@ -492,11 +587,22 @@ export const REAL_PRODUCTS = [
  */
 
 /**
- * Marques demandées mais non intégrées faute de données fiables trouvées :
- * Yumi, Skybottle, Nijiko, Univeda, Alvadiem, Douce Nature. Idem pour un
- * produit mains/pieds précis chez Roger & Gallet ou Aroma-Zone (marques
- * réelles, mais je n'ai pas trouvé de fiche produit + prix + ingrédients
- * assez fiable pour les intégrer sans risquer d'inventer des détails).
+ * Marques demandées (mains/pieds) mais non intégrées faute de données
+ * fiables trouvées : Yumi, Skybottle, Nijiko, Univeda, Alvadiem, Douce
+ * Nature. Idem pour un produit mains/pieds précis chez Roger & Gallet ou
+ * Aroma-Zone.
+ *
+ * Marques demandées pour "yeux" mais non intégrées faute de données
+ * fiables trouvées : Dr Pierre Ricaud, Paula's Choice, Horace, Yves Rocher,
+ * Aroma-Zone, Théobroma, Green Tangerine, Belif Aqua Bomb, Haruharu Wonder,
+ * Medicube, Laneige, Innisfree Green, Hanskin Real Complexion, Abib, TirTir,
+ * Nuxe, Erborian.
+ *
+ * Marques demandées pour "cou/décolleté" mais non intégrées faute de
+ * données fiables trouvées : Cellexia, goPure, HSBCC, OLAY, ActivScience,
+ * Dr Pierre Ricaud, Sisley, L'Oréal, Annemarie Börlind, Dr. Hauschka,
+ * bareMinerals, La Mer, Lierac, Erborian, Nuxe, RoC, Dr. Barbara Sturm,
+ * Patyka, CurrentBody, Yaman, COSRX, Medipeel, Dr.Melaxin, DERMATORY, CKD.
  *
  * CicaManuka a une gamme plus large que les 2 produits ici (mains + pieds) :
  * baume corps IAA10+, crème apaisante visage/corps IAA15+, crème réparatrice

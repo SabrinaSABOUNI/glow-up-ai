@@ -25,6 +25,7 @@
  * @property {[number, number]} ageRange - ex. [25, 45], utiliser [0,120] si non pertinent
  * @property {string[]} lifestyle     - ["sans_gluten","sans_silicone","grossesse_ok"] (optionnel, pour affichage)
  * @property {string} [format]       - "serum" | "creme" | "gel" | "lotion" (texture/format du produit)
+ * @property {string[]} [zones]      - ["visage","yeux","zone_t","cou","mains","pieds"]
  */
 
 // ---------------------------------------------------------------------------
@@ -93,9 +94,10 @@ export const WEIGHTS = {
   skinType: 0.23,
   style: 0.14,
   category: 0.09,
-  pores: 0.09,
-  age: 0.04,
+  pores: 0.07,
+  age: 0.02,
   format: 0.08,
+  zone: 0.04,
 };
 
 // ---------------------------------------------------------------------------
@@ -144,6 +146,12 @@ function scoreFormat(product, userFormat) {
   return product.format === userFormat ? 1 : 0.3;
 }
 
+function scoreZone(product, userZone) {
+  if (!userZone) return 0.7;
+  if (!product.zones || product.zones.length === 0) return 0.5;
+  return product.zones.includes(userZone) ? 1 : 0.3;
+}
+
 function scoreAge(product, userAge) {
   const age = Number(userAge);
   if (!age || Number.isNaN(age)) return 0.7;
@@ -182,6 +190,8 @@ function normalizeAnswers(answers) {
     age: answers.age,
     // Déjà normalisé côté UI : "serum" | "creme" | "gel" | "lotion" | undefined
     format: answers.format || null,
+    // Déjà normalisé côté UI : "visage" | "yeux" | "zone_t" | "cou" | "mains" | "pieds"
+    zone: answers.zone || null,
   };
 }
 
@@ -200,6 +210,7 @@ export function computeMatchScore(product, rawAnswers) {
     pores: scorePores(product, a.pores),
     age: scoreAge(product, a.age),
     format: scoreFormat(product, a.format),
+    zone: scoreZone(product, a.zone),
   };
 
   const raw =
@@ -209,10 +220,24 @@ export function computeMatchScore(product, rawAnswers) {
     sub.category * WEIGHTS.category +
     sub.pores * WEIGHTS.pores +
     sub.age * WEIGHTS.age +
-    sub.format * WEIGHTS.format;
+    sub.format * WEIGHTS.format +
+    sub.zone * WEIGHTS.zone;
 
   const pct = Math.min(98, Math.round(raw * 100));
   return { pct, sub };
+}
+
+/**
+ * Filtre STRICT par zone : contrairement aux autres critères (qui pondèrent
+ * sans exclure), la zone élimine les produits non pertinents. Une crème
+ * mains n'a rien à faire dans les résultats si la personne veut traiter son
+ * visage ou ses yeux — et certains actifs visage sont même déconseillés
+ * autour des yeux, donc pas de repli "généreux" ici, seulement une
+ * correspondance exacte avec les tags `zones` du produit.
+ */
+export function filterByZone(products, userZone) {
+  if (!userZone) return products; // pas de zone précisée = pas de filtre
+  return products.filter((p) => (p.zones || []).includes(userZone));
 }
 
 /** Classe tout le catalogue par pertinence décroissante */
@@ -241,6 +266,9 @@ export function explainMatch(product, answers) {
   }
   if (a.format && product.format === a.format) {
     reasons.push("Exactement le format de produit recherché");
+  }
+  if (a.zone && product.zones?.includes(a.zone)) {
+    reasons.push("Formulé pour la zone que vous souhaitez traiter");
   }
   if (reasons.length === 0) {
     reasons.push("Sélection générale, moins ciblée sur vos critères");

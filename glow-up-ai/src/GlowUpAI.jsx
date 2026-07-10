@@ -21,7 +21,7 @@ import {
   LogOut,
   Loader2,
 } from "lucide-react";
-import { rankProducts, explainMatch } from "./matching-engine";
+import { rankProducts, explainMatch, filterByZone } from "./matching-engine";
 import { useProducts } from "./lib/useProducts";
 import { useAuth } from "./lib/useAuth";
 import { supabase } from "./lib/supabaseClient";
@@ -165,7 +165,8 @@ const ZONE_OPTIONS = [
   { key: "visage", label: "Visage complet", emoji: "🙂" },
   { key: "yeux", label: "Contours des yeux", emoji: "👁️" },
   { key: "zone_t", label: "Nez et zone T", emoji: "👃" },
-  { key: "cou", label: "Cou", emoji: "🧣" },
+  { key: "cou", label: "Cou / Décolleté", emoji: "🧣" },
+  { key: "aisselles", label: "Aisselles", emoji: "🙋" },
   { key: "mains", label: "Mains", emoji: "🤲" },
   { key: "pieds", label: "Pieds", emoji: "🦶" },
 ];
@@ -461,19 +462,25 @@ export default function GlowUpAI() {
 
   const quizIndex = QUIZ_STEPS.indexOf(screen);
 
-  // Classement en direct via le vrai moteur de matching + le catalogue (Supabase ou local)
+  // Filtre STRICT par zone d'abord (une crème mains n'apparaît jamais si la
+  // personne veut traiter son visage), puis classement par pertinence sur
+  // ce qui reste.
+  const zoneProducts = useMemo(
+    () => filterByZone(products, answers.zone),
+    [products, answers.zone]
+  );
   const rankedProducts = useMemo(
-    () => rankProducts(products, answers),
-    [answers, products]
+    () => rankProducts(zoneProducts, answers),
+    [answers, zoneProducts]
   );
 
   // --- Tri et filtres sur l'écran produits ---
   const priceCeiling = useMemo(
     () =>
-      products.length
-        ? Math.ceil(Math.max(...products.map((p) => p.price)) / 5) * 5
+      zoneProducts.length
+        ? Math.ceil(Math.max(...zoneProducts.map((p) => p.price)) / 5) * 5
         : 40,
-    [products]
+    [zoneProducts]
   );
   const [sortBy, setSortBy] = useState("pertinence"); // pertinence | prix_asc | prix_desc
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -1219,10 +1226,14 @@ export default function GlowUpAI() {
             </div>
             <div className="px-6 pt-5">
               <div className="bg-[#bfe9dd] text-pink-500 font-bold text-center py-3 rounded-full text-lg">
-                {displayedProducts[0]?.pct ?? rankedProducts[0]?.pct ?? 0}% match
+                {zoneProducts.length === 0 && answers.zone
+                  ? "Aucun produit pour cette zone"
+                  : `${displayedProducts[0]?.pct ?? rankedProducts[0]?.pct ?? 0}% match`}
               </div>
               <p className="text-center text-sm text-neutral-800 mt-2">
                 Nos produits{" "}
+                {answers.zone &&
+                  `— ${ZONE_OPTIONS.find((z) => z.key === answers.zone)?.label} — `}
                 {answers.style !== "classique" &&
                   `— ${STYLE_OPTIONS.find((s) => s.key === answers.style)?.label} — `}
                 {answers.format &&
@@ -1281,16 +1292,32 @@ export default function GlowUpAI() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto px-6 mt-3 space-y-5">
-              {displayedProducts.length === 0 && (
-                <p className="text-center text-sm text-neutral-700 mt-8">
-                  Aucun produit ne correspond à ces filtres.{" "}
+              {zoneProducts.length === 0 && answers.zone ? (
+                <div className="text-center mt-8 px-2">
+                  <p className="text-sm text-neutral-800 mb-3">
+                    Nous n'avons pas encore de produits dédiés à «{" "}
+                    {ZONE_OPTIONS.find((z) => z.key === answers.zone)?.label}{" "}
+                    » dans notre catalogue.
+                  </p>
                   <button
-                    onClick={resetFilters}
-                    className="underline text-pink-600"
+                    onClick={() => goTo("zone")}
+                    className="underline text-pink-600 text-sm font-medium"
                   >
-                    Réinitialiser
+                    Choisir une autre zone
                   </button>
-                </p>
+                </div>
+              ) : (
+                displayedProducts.length === 0 && (
+                  <p className="text-center text-sm text-neutral-700 mt-8">
+                    Aucun produit ne correspond à ces filtres.{" "}
+                    <button
+                      onClick={resetFilters}
+                      className="underline text-pink-600"
+                    >
+                      Réinitialiser
+                    </button>
+                  </p>
+                )
               )}
               {displayedProducts.map(({ product: p, pct }) => (
                 <button
@@ -1343,17 +1370,23 @@ export default function GlowUpAI() {
             </div>
             <div className="px-6 pb-6 pt-3 flex items-center gap-4">
               <BackArrow onClick={goBack} />
-              <Pill
-                onClick={() => {
-                  setSelectedProductId(
-                    (displayedProducts[0] || rankedProducts[0])?.product.id
-                  );
-                  goTo("detail");
-                }}
-                className="flex-1 text-center"
-              >
-                page suivante
-              </Pill>
+              {zoneProducts.length === 0 && answers.zone ? (
+                <Pill onClick={() => goTo("zone")} className="flex-1 text-center">
+                  Choisir une autre zone
+                </Pill>
+              ) : (
+                <Pill
+                  onClick={() => {
+                    setSelectedProductId(
+                      (displayedProducts[0] || rankedProducts[0])?.product.id
+                    );
+                    goTo("detail");
+                  }}
+                  className="flex-1 text-center"
+                >
+                  page suivante
+                </Pill>
+              )}
             </div>
 
             {showFilterPanel && (
