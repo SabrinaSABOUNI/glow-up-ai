@@ -26,6 +26,7 @@
  * @property {string[]} lifestyle     - ["sans_gluten","sans_silicone","grossesse_ok"] (optionnel, pour affichage)
  * @property {string} [format]       - "serum" | "creme" | "gel" | "lotion" (texture/format du produit)
  * @property {string[]} [zones]      - ["visage","yeux","zone_t","cou","mains","pieds"]
+ * @property {string} [ean]          - Code-barres EAN (pour le mode "scanner en rayon", V2)
  */
 
 // ---------------------------------------------------------------------------

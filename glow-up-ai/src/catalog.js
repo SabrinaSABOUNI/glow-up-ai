@@ -18,6 +18,15 @@
  * projet Vite. Sans ce champ, l'app affiche automatiquement une icône de
  * remplacement selon le format (sérum/crème/gel/lotion) — aucun lien externe
  * n'est utilisé, pour éviter les images cassées ou les soucis de droits.
+ *
+ * CODE-BARRES (`ean`) — pour le mode "scanner en rayon" (façon Yuka).
+ * 4 produits sur 29 ont un vrai code confirmé par recoupement d'au moins
+ * 2 sources indépendantes (lrp_effaclarduo, cerave_hydratante,
+ * the_ordinary_niacinamide, beautyofjoseon_glow_serum). Les 25 autres ont
+ * volontairement `ean` absent plutôt qu'un faux code inventé qui casserait
+ * le scanner. À compléter : 1) vérifier Open Beauty Facts
+ * (https://world.openbeautyfacts.org/api/v2/product/<code>.json, licence
+ * ouverte ODbL), 2) sinon relever à la main sur l'emballage.
  */
 
 export const REAL_PRODUCTS = [
@@ -37,6 +46,7 @@ export const REAL_PRODUCTS = [
     keyIngredients: ["Niacinamide (~2-3%)", "LHA", "Phylobioma"],
     format: "creme",
     zones: ["visage", "zone_t"],
+    ean: "3337875863377",
     note: "Anti-imperfections, réduit points noirs et marques post-acné. Éviter le contour des yeux.",
   },
   {
@@ -55,6 +65,7 @@ export const REAL_PRODUCTS = [
     keyIngredients: ["Céramides NP/AP/EOP", "Niacinamide", "Acide hyaluronique"],
     format: "creme",
     zones: ["visage"],
+    ean: "3337875597449",
     note: "Technologie MVE : libération progressive des actifs sur 24h. Convient aussi aux peaux desséchées par un traitement anti-acné.",
   },
   {
@@ -73,7 +84,8 @@ export const REAL_PRODUCTS = [
     keyIngredients: ["Eau thermale d'Avène", "TRP-Regulin™"],
     format: "lotion",
     zones: ["visage"],
-    note: "Lait nettoyant sans rinçage, formulé pour les peaux sujettes aux rougeurs et sensibles.",
+    priceConfirmed: false,
+    note: "⚠️ À VÉRIFIER : le site officiel Avène (US) indique que la gamme Antirougeurs CLEAN a été discontinuée, remplacée par 'Redness Expert'. Lait nettoyant sans rinçage, formulé pour les peaux sujettes aux rougeurs et sensibles — à confirmer que ce produit est toujours vendu en France avant tout affichage public ou lien d'achat.",
   },
   {
     id: "loreal_ageperfect_serum",
@@ -203,6 +215,7 @@ export const REAL_PRODUCTS = [
     keyIngredients: ["Niacinamide (10%)", "Zinc PCA"],
     format: "serum",
     zones: ["visage", "zone_t"],
+    ean: "0769915190311",
     note: "Référence du marché pour son rapport prix/efficacité — bon produit d'entrée de gamme pour un MVP.",
   },
   {
@@ -279,6 +292,7 @@ export const REAL_PRODUCTS = [
     keyIngredients: ["Propolis (60%)", "Niacinamide (2%)"],
     format: "serum",
     zones: ["visage", "zone_t"],
+    ean: "8809657114960",
     note: "Best-seller K-beauty, texture miel, régule le sébum et resserre les pores tout en apaisant.",
   },
   {

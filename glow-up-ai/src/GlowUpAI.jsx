@@ -20,11 +20,15 @@ import {
   Mail,
   LogOut,
   Loader2,
+  ScanLine,
+  Keyboard,
 } from "lucide-react";
 import { rankProducts, explainMatch, filterByZone } from "./matching-engine";
-import { useProducts } from "./lib/useProducts";
+import { useProducts, getStoreIdFromUrl } from "./lib/useProducts";
 import { useAuth } from "./lib/useAuth";
 import { supabase } from "./lib/supabaseClient";
+import { lookupOpenBeautyFacts } from "./lib/openBeautyFacts";
+import { Html5Qrcode } from "html5-qrcode";
 
 // ---------- palette ----------
 const GRAD = {
@@ -171,6 +175,15 @@ const ZONE_OPTIONS = [
   { key: "pieds", label: "Pieds", emoji: "🦶" },
 ];
 
+// Budget : signal clé pour la pertinence commerciale des recommandations
+// (segmentation utile pour l'affiliation/partenariats), pas juste un critère
+// de confort utilisateur.
+const BUDGET_OPTIONS = [
+  { key: "petit", label: "Petit budget", emoji: "💶", max: 15 },
+  { key: "moyen", label: "Budget moyen", emoji: "💳", max: 35 },
+  { key: "premium", label: "Sans limite", emoji: "💎", max: 999 },
+];
+
 // Modernized routine "styles" — the philosophy/method the user wants to follow
 const STYLE_OPTIONS = [
   { key: "classique", label: "Classique", emoji: "🤍" },
@@ -280,6 +293,7 @@ const QUIZ_STEPS = [
   "concerns",
   "routine",
   "style",
+  "budget",
 ];
 
 export default function GlowUpAI() {
@@ -300,6 +314,7 @@ export default function GlowUpAI() {
       style: "classique",
       format: "",
       zone: "",
+      budget: "",
       entryPath: "",
       firstName: "Camille",
     });
@@ -315,6 +330,7 @@ export default function GlowUpAI() {
     style: "classique",
     format: "",
     zone: "",
+    budget: "",
     entryPath: "",
     firstName: "Camille",
   });
@@ -342,8 +358,13 @@ export default function GlowUpAI() {
 
   // --- Compte utilisateur (lien magique par email) et catalogue en direct ---
   const { user, loading: authLoading, signInWithEmail, signOut } = useAuth();
-  const { products, loading: productsLoading, source: productsSource } =
-    useProducts();
+  const [storeId] = useState(() => getStoreIdFromUrl());
+  const {
+    products,
+    loading: productsLoading,
+    source: productsSource,
+    storeName,
+  } = useProducts(storeId);
   const [authEmail, setAuthEmail] = useState("");
   const [authStatus, setAuthStatus] = useState("idle"); // idle | sending | sent | error
   const [authError, setAuthError] = useState("");
@@ -357,6 +378,31 @@ export default function GlowUpAI() {
       setAuthStatus("error");
     } else {
       setAuthStatus("sent");
+    }
+  };
+
+  // --- Scanner code-barres (façon Yuka) ---
+  const [scanState, setScanState] = useState("camera"); // camera | manual | looking | not_found | obf_found | camera_error
+  const [manualEan, setManualEan] = useState("");
+  const [obfResult, setObfResult] = useState(null);
+  const [lastScannedEan, setLastScannedEan] = useState("");
+  const html5QrRef = useRef(null);
+
+  const handleScannedCode = async (code) => {
+    setLastScannedEan(code);
+    setScanState("looking");
+    const match = products.find((p) => p.ean === code);
+    if (match) {
+      setSelectedProductId(match.id);
+      goTo("detail");
+      return;
+    }
+    const obf = await lookupOpenBeautyFacts(code);
+    if (obf) {
+      setObfResult(obf);
+      setScanState("obf_found");
+    } else {
+      setScanState("not_found");
     }
   };
 
@@ -381,6 +427,7 @@ export default function GlowUpAI() {
           style: qa.style || a.style,
           format: qa.format || a.format,
           zone: qa.zone || a.zone,
+          budget: qa.budget || a.budget,
         }));
       }
       const { data: favs } = await supabase
@@ -411,6 +458,7 @@ export default function GlowUpAI() {
       style: answers.style,
       format: answers.format || null,
       zone: answers.zone || null,
+      budget: answers.budget || null,
       updated_at: new Date().toISOString(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -450,6 +498,42 @@ export default function GlowUpAI() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, screen]);
 
+  // Démarre/arrête la caméra proprement selon l'écran affiché, pour ne
+  // jamais laisser la webcam allumée en arrière-plan.
+  useEffect(() => {
+    if (screen !== "scanner" || scanState !== "camera") return;
+    const elId = "glowupai-scanner-viewport";
+    const instance = new Html5Qrcode(elId);
+    html5QrRef.current = instance;
+    let stopped = false;
+
+    instance
+      .start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 240, height: 160 } },
+        (decodedText) => {
+          if (stopped) return;
+          stopped = true;
+          instance
+            .stop()
+            .catch(() => {})
+            .finally(() => handleScannedCode(decodedText));
+        },
+        () => {
+          /* échec de lecture sur une frame donnée : normal, on ignore */
+        }
+      )
+      .catch(() => {
+        setScanState("camera_error");
+      });
+
+    return () => {
+      stopped = true;
+      instance.stop().catch(() => {});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, scanState]);
+
   const toggleMulti = (key, value) => {
     setAnswers((a) => {
       const list = a[key];
@@ -488,6 +572,15 @@ export default function GlowUpAI() {
   const [filterCategories, setFilterCategories] = useState([]);
   const [filterFormats, setFilterFormats] = useState([]);
   const [maxPrice, setMaxPrice] = useState(priceCeiling);
+
+  // Pré-remplit le filtre prix selon le budget choisi au quiz, dès qu'on
+  // arrive sur les résultats — reste modifiable ensuite via le panneau filtre.
+  useEffect(() => {
+    if (screen !== "congrats" || !answers.budget) return;
+    const chosen = BUDGET_OPTIONS.find((b) => b.key === answers.budget);
+    if (chosen) setMaxPrice(Math.min(chosen.max, priceCeiling));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, answers.budget, priceCeiling]);
 
   const activeFilterCount =
     filterCategories.length +
@@ -750,6 +843,11 @@ export default function GlowUpAI() {
                 <br />
                 commencer ?
               </h2>
+              {storeName && (
+                <p className="text-white/90 text-xs bg-white/15 rounded-full px-3 py-1">
+                  📍 Vous êtes chez {storeName}
+                </p>
+              )}
               <div className="flex flex-col gap-4 w-full px-2">
                 <button
                   onClick={() => {
@@ -762,8 +860,8 @@ export default function GlowUpAI() {
                     Diagnostic peau complet
                   </p>
                   <p className="text-xs text-neutral-600 mt-1">
-                    Quelques questions sur votre peau pour la routine la plus
-                    précise.
+                    Quelques questions sur votre peau, à faire tranquillement
+                    chez vous pour la routine la plus précise.
                   </p>
                 </button>
                 <button
@@ -774,11 +872,31 @@ export default function GlowUpAI() {
                   className="bg-white/90 rounded-2xl px-5 py-4 text-left shadow-sm active:scale-95 transition"
                 >
                   <p className="font-semibold text-neutral-900">
-                    Par type de produit
+                    Mode Express
                   </p>
                   <p className="text-xs text-neutral-600 mt-1">
-                    Sérum, crème, gel... partez du produit que vous cherchez.
+                    3 questions, réponse immédiate — idéal en magasin, devant
+                    le rayon.
                   </p>
+                </button>
+                <button
+                  onClick={() => {
+                    setScanState("camera");
+                    setObfResult(null);
+                    goTo("scanner");
+                  }}
+                  className="bg-white/90 rounded-2xl px-5 py-4 text-left shadow-sm active:scale-95 transition flex items-center gap-3"
+                >
+                  <ScanLine size={22} className="text-pink-500 shrink-0" />
+                  <span>
+                    <p className="font-semibold text-neutral-900">
+                      Scanner un produit
+                    </p>
+                    <p className="text-xs text-neutral-600 mt-1">
+                      Vous avez déjà un produit en main ? Scannez son
+                      code-barres.
+                    </p>
+                  </span>
                 </button>
               </div>
             </div>
@@ -828,6 +946,139 @@ export default function GlowUpAI() {
           </ScreenShell>
         )}
 
+        {screen === "scanner" && (
+          <div className="w-full h-full flex flex-col bg-neutral-950 text-white">
+            <div className="flex items-center justify-between px-6 pt-6">
+              <BackArrow onClick={goBack} />
+              <Logo />
+              <div className="w-11" />
+            </div>
+
+            {scanState === "camera" && (
+              <div className="flex-1 flex flex-col items-center justify-center px-6">
+                <p className="text-sm text-white/80 mb-4 text-center">
+                  Cadrez le code-barres du produit dans le rectangle
+                </p>
+                <div
+                  id="glowupai-scanner-viewport"
+                  className="w-full max-w-xs aspect-square rounded-2xl overflow-hidden bg-neutral-900"
+                />
+                <button
+                  onClick={() => setScanState("manual")}
+                  className="mt-6 flex items-center gap-2 text-sm text-white/70 underline"
+                >
+                  <Keyboard size={16} />
+                  Saisir le code-barres manuellement
+                </button>
+              </div>
+            )}
+
+            {scanState === "camera_error" && (
+              <div className="flex-1 flex flex-col items-center justify-center px-6 gap-4 text-center">
+                <ScanLine size={40} className="text-white/50" />
+                <p className="text-sm text-white/80">
+                  Impossible d'accéder à la caméra (permission refusée, ou
+                  navigateur non compatible).
+                </p>
+                <Pill onClick={() => setScanState("manual")}>
+                  Saisir le code-barres manuellement
+                </Pill>
+              </div>
+            )}
+
+            {scanState === "manual" && (
+              <div className="flex-1 flex flex-col items-center justify-center px-6 gap-4">
+                <Keyboard size={32} className="text-white/60" />
+                <input
+                  value={manualEan}
+                  onChange={(e) => setManualEan(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    manualEan.trim() &&
+                    handleScannedCode(manualEan.trim())
+                  }
+                  placeholder="Code-barres (ex. 3600550578041)"
+                  inputMode="numeric"
+                  className="w-full max-w-xs px-4 py-3 rounded-full text-center text-neutral-800 outline-none"
+                />
+                <Pill
+                  onClick={() =>
+                    manualEan.trim() && handleScannedCode(manualEan.trim())
+                  }
+                >
+                  Valider
+                </Pill>
+                <button
+                  onClick={() => setScanState("camera")}
+                  className="text-sm text-white/70 underline"
+                >
+                  Revenir à la caméra
+                </button>
+              </div>
+            )}
+
+            {scanState === "looking" && (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                <Loader2 size={28} className="animate-spin text-white/70" />
+                <p className="text-sm text-white/70">Recherche du produit...</p>
+              </div>
+            )}
+
+            {scanState === "not_found" && (
+              <div className="flex-1 flex flex-col items-center justify-center px-6 gap-4 text-center">
+                <p className="text-sm text-white/80">
+                  Nous ne connaissons pas encore ce produit (code {lastScannedEan}
+                  ), ni dans notre catalogue, ni sur Open Beauty Facts.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setScanState("camera")}
+                    className="text-sm underline text-white/70"
+                  >
+                    Réessayer
+                  </button>
+                  <Pill onClick={() => goTo("entryChoice")}>
+                    Faire le diagnostic à la place
+                  </Pill>
+                </div>
+              </div>
+            )}
+
+            {scanState === "obf_found" && obfResult && (
+              <div className="flex-1 flex flex-col items-center justify-center px-6 gap-4 text-center">
+                {obfResult.image && (
+                  <img
+                    src={obfResult.image}
+                    alt={obfResult.name}
+                    className="w-28 h-28 object-contain rounded-xl bg-white"
+                  />
+                )}
+                <p className="font-semibold">{obfResult.name}</p>
+                {obfResult.brand && (
+                  <p className="text-xs text-white/70">{obfResult.brand}</p>
+                )}
+                <p className="text-xs text-white/60 max-w-xs">
+                  Ce produit est référencé sur Open Beauty Facts mais pas
+                  encore dans notre catalogue personnalisé — on ne peut pas
+                  encore vous dire s'il correspond à votre profil.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setScanState("camera")}
+                    className="text-sm underline text-white/70"
+                  >
+                    Scanner autre chose
+                  </button>
+                  <Pill onClick={() => goTo("entryChoice")}>
+                    Faire le diagnostic à la place
+                  </Pill>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+
         {screen === "format" && (
           <ScreenShell
             gradient={GRAD.pink}
@@ -875,7 +1126,7 @@ export default function GlowUpAI() {
             bottom={
               <div className="flex items-center gap-4">
                 <BackArrow onClick={goBack} />
-                <Pill onClick={() => goTo("congrats")} className="flex-1 text-center">
+                <Pill onClick={() => goTo("budget")} className="flex-1 text-center">
                   page suivante
                 </Pill>
               </div>
@@ -1155,7 +1406,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("congrats")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo("budget")} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>
@@ -1189,6 +1440,51 @@ export default function GlowUpAI() {
               <p className="text-white/90 text-xs px-2">
                 {ROUTINE_META[answers.style].tip}
               </p>
+            </div>
+          </ScreenShell>
+        )}
+
+        {screen === "budget" && (
+          <ScreenShell
+            gradient={GRAD.pink}
+            top={<Logo />}
+            bottom={
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-4">
+                  <BackArrow onClick={goBack} />
+                  <Pill onClick={() => goTo("congrats")} className="flex-1 text-center">
+                    page suivante
+                  </Pill>
+                </div>
+                {QUIZ_STEPS.includes(screen) && (
+                  <ProgressBar step={quizIndex + 1} total={QUIZ_STEPS.length} />
+                )}
+              </div>
+            }
+          >
+            <div className="flex flex-col items-center text-center gap-8 mt-6">
+              <div className="w-52 h-52 rounded-full bg-white/20 border-4 border-white/30 flex items-center justify-center">
+                <span className="text-white text-4xl">💰</span>
+              </div>
+              <h2 className="text-white text-2xl font-semibold leading-tight">
+                Quel budget pour
+                <br />
+                vos produits ?
+              </h2>
+              <div className="flex gap-4 flex-wrap justify-center">
+                {BUDGET_OPTIONS.map((b) => (
+                  <OptionCircle
+                    key={b.key}
+                    label={b.label}
+                    selected={answers.budget === b.key}
+                    onClick={() =>
+                      setAnswers((a) => ({ ...a, budget: b.key }))
+                    }
+                  >
+                    <span className="text-2xl">{b.emoji}</span>
+                  </OptionCircle>
+                ))}
+              </div>
             </div>
           </ScreenShell>
         )}

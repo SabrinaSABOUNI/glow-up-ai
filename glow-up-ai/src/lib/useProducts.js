@@ -21,24 +21,81 @@ function rowToProduct(row) {
     lifestyle: row.lifestyle || [],
     keyIngredients: row.key_ingredients || [],
     format: row.format,
+    zones: row.zones || [],
+    ean: row.ean || null,
     note: row.note,
   };
 }
 
 /**
- * Renvoie le catalogue produit : Supabase si configuré et disponible,
- * sinon le catalogue local (catalog.js) — l'app fonctionne dans les deux cas.
+ * Lit l'identifiant du magasin partenaire depuis l'URL (?store=<uuid>),
+ * celui qu'on met dans le QR code affiché en rayon. Absent = catalogue
+ * national complet (usage grand public classique).
  */
-export function useProducts() {
+export function getStoreIdFromUrl() {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("store");
+}
+
+/**
+ * Renvoie le catalogue produit :
+ * - si un `storeId` est fourni (via QR code en magasin) ET Supabase configuré :
+ *   uniquement les produits que CE magasin a en rayon (table store_products) ;
+ * - sinon, si Supabase est configuré : le catalogue national complet ;
+ * - sinon (pas de Supabase) : le catalogue local (catalog.js).
+ * Dans tous les cas de repli/erreur, l'app reste utilisable.
+ */
+export function useProducts(storeId) {
   const [products, setProducts] = useState(REAL_PRODUCTS);
   const [loading, setLoading] = useState(supabaseConfigured);
   const [source, setSource] = useState("local");
+  const [storeName, setStoreName] = useState(null);
 
   useEffect(() => {
     if (!supabaseConfigured) return;
     let cancelled = false;
 
     (async () => {
+      // --- Cas 1 : un magasin précis est demandé (QR code en rayon) ---
+      if (storeId) {
+        const { data: store, error: storeError } = await supabase
+          .from("stores")
+          .select("id, name, active")
+          .eq("id", storeId)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (storeError || !store || !store.active) {
+          console.warn(
+            "[Supabase] Magasin introuvable ou inactif, repli sur le catalogue national.",
+            storeError?.message
+          );
+          // on continue vers le cas 2 (catalogue national) plutôt que de bloquer
+        } else {
+          const { data: rows, error: linkError } = await supabase
+            .from("store_products")
+            .select("products(*)")
+            .eq("store_id", storeId)
+            .eq("in_stock", true);
+
+          if (!cancelled && !linkError && rows?.length) {
+            setProducts(rows.map((r) => rowToProduct(r.products)));
+            setStoreName(store.name);
+            setSource("supabase-store");
+            setLoading(false);
+            return;
+          }
+          if (linkError) {
+            console.warn(
+              "[Supabase] Impossible de charger le rayon de ce magasin, repli sur le catalogue national :",
+              linkError.message
+            );
+          }
+        }
+      }
+
+      // --- Cas 2 : catalogue national complet ---
       const { data, error } = await supabase.from("products").select("*");
       if (cancelled) return;
 
@@ -61,7 +118,7 @@ export function useProducts() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [storeId]);
 
-  return { products, loading, source };
+  return { products, loading, source, storeName };
 }

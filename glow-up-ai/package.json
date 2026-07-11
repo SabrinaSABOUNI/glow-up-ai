@@ -8,10 +8,12 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "seed": "node scripts/seed-products.mjs"
+    "seed": "node scripts/seed-products.mjs",
+    "seed:stores": "node scripts/seed-stores.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

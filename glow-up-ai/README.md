@@ -53,6 +53,18 @@ déployée — sinon le lien magique redirigera vers une page d'erreur.
 
 ## 3. Ce qui est câblé maintenant
 
+✅ **3 parcours d'entrée** :
+- Diagnostic complet (à la maison, précis)
+- Mode Express (3 questions, pensé pour un usage en magasin)
+- Scanner un produit (façon Yuka — voir section 5)
+
+✅ **Catalogue par magasin** — si l'app est ouverte avec `?store=<uuid>` dans
+l'URL (le lien encodé dans un QR code affiché en rayon), elle ne recommande
+QUE les produits que CE magasin a réellement en stock (table
+`store_products`), pas le catalogue national entier. Sans ce paramètre,
+comportement inchangé (catalogue complet). Pour créer un magasin de démo :
+`npm run seed:stores`.
+
 ✅ **Authentification** — écran "Se connecter" (lien magique), état persistant
 via `useAuth()` (`src/lib/useAuth.js`), déconnexion depuis l'écran pharmacies.
 
@@ -71,7 +83,28 @@ rien n'est bloqué, mais rien n'est sauvegardé.
 classique si tu préfères, ajouter une page "Mes favoris" dédiée, ou notifier
 l'utilisateur par email à la fin de sa routine (`calendrier`).
 
-## 4. Déployer
+## 5. Le scanner de code-barres (mode "façon Yuka")
+
+Utilise `html5-qrcode` (caméra via le navigateur, fonctionne sur iOS Safari
+contrairement à l'API native `BarcodeDetector`). Quand un code-barres est
+scanné (ou saisi manuellement en repli si la caméra n'est pas accessible) :
+
+1. Recherche d'abord dans notre catalogue (`products.ean`) → si trouvé,
+   redirige directement vers la fiche produit avec le matching personnalisé
+   et les produits associés.
+2. Sinon, interroge **Open Beauty Facts** (API publique, licence ouverte
+   ODbL, réutilisable commercialement) pour au moins identifier le produit.
+3. Sinon, message honnête "produit non reconnu".
+
+⚠️ **Point important** : aucun produit du catalogue n'a de vrai code-barres
+renseigné pour l'instant (`ean: null` partout) — je n'en ai pas inventé.
+Tant que ce champ n'est pas rempli (à la main, ou via l'API Open Beauty
+Facts en vérifiant que le bon produit existe), le scanner passera presque
+toujours par l'étape 2 ou 3 ci-dessus, jamais l'étape 1. C'est le prochain
+vrai chantier de données à faire si tu veux que le scan soit utile en
+pratique.
+
+## 6. Déployer
 
 Le projet est prêt pour un déploiement en un clic sur Vercel ou Netlify
 (`netlify.toml` et `vercel.json` déjà présents). Le clic final t'appartient
@@ -116,9 +149,12 @@ src/
   lib/
     supabaseClient.js → client Supabase + détection "configuré ou non"
     useAuth.js        → hook d'authentification (lien magique par email)
-    useProducts.js    → hook de catalogue (Supabase avec repli local)
+    useProducts.js    → hook de catalogue (Supabase, national OU par magasin, avec repli local)
+    openBeautyFacts.js → repli pour le scanner si un produit scanné n'est pas dans notre catalogue
 supabase/schema.sql   → à exécuter une fois dans le SQL Editor de Supabase
-scripts/seed-products.mjs → injecte catalog.js dans la table Supabase "products"
+scripts/
+  seed-products.mjs   → injecte catalog.js dans la table Supabase "products"
+  seed-stores.mjs     → crée un magasin de démo + lui assigne des produits
 netlify.toml, vercel.json → config de déploiement prêtes à l'emploi
 ```
 

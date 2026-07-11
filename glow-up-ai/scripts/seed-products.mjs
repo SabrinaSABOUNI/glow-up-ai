@@ -42,6 +42,7 @@ function toRow(p) {
     lifestyle: p.lifestyle ?? [],
     key_ingredients: p.keyIngredients ?? [],
     format: p.format ?? null,
+    zones: p.zones ?? [],
     note: p.note ?? null,
   };
 }
