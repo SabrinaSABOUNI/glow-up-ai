@@ -120,18 +120,12 @@ function OptionCircle({ label, selected, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-2 group"
+      className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3.5 text-center transition active:scale-95 ${
+        selected ? "border-white bg-white/25" : "border-white/30 bg-white/10"
+      }`}
     >
-      <div
-        className={`w-20 h-20 rounded-full flex items-center justify-center border-2 transition ${
-          selected
-            ? "border-white bg-white/30 scale-105"
-            : "border-white/40 bg-white/10"
-        }`}
-      >
-        {children}
-      </div>
-      <span className="text-white text-sm">{label}</span>
+      <div className="flex items-center justify-center h-7">{children}</div>
+      <span className="text-white text-[11px] leading-tight">{label}</span>
     </button>
   );
 }
@@ -1115,7 +1109,7 @@ export default function GlowUpAI() {
                 <br />
                 traiter ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {ZONE_OPTIONS.map((z) => (
                   <OptionCircle
                     key={z.key}
@@ -1286,7 +1280,7 @@ export default function GlowUpAI() {
                 <br />
                 cherchez-vous ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {FORMAT_OPTIONS.filter((f) =>
                   getZoneConfig(answers.zone).formatOptions
                     ? getZoneConfig(answers.zone).formatOptions.includes(f.key)
@@ -1330,7 +1324,7 @@ export default function GlowUpAI() {
                 <br />
                 souhaitez-vous traiter ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {(getZoneConfig(answers.zone).concernOptions ||
                   QUICK_CONCERN_OPTIONS
                 ).map((t) => (
@@ -1406,7 +1400,7 @@ export default function GlowUpAI() {
               <h2 className="text-white text-2xl font-semibold">
                 Votre peau est:
               </h2>
-              <div className="flex gap-6">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {SKIN_TONES.map((t) => (
                   <OptionCircle
                     key={t}
@@ -1455,7 +1449,7 @@ export default function GlowUpAI() {
                 {getZoneConfig(answers.zone).typeLabel ||
                   "Votre peau a tendance à être:"}
               </h2>
-              <div className="flex gap-6">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {(getZoneConfig(answers.zone).typeOptions || SKIN_TYPES).map(
                   (t) => (
                     <OptionCircle
@@ -1496,7 +1490,7 @@ export default function GlowUpAI() {
               <h2 className="text-white text-2xl font-semibold">
                 Texture :
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {AISSELLES_TEXTURE_OPTIONS.map((t) => (
                   <OptionCircle
                     key={t}
@@ -1535,7 +1529,7 @@ export default function GlowUpAI() {
               <h2 className="text-white text-2xl font-semibold">
                 Transpiration :
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {AISSELLES_TRANSPIRATION_OPTIONS.map((t) => (
                   <OptionCircle
                     key={t}
@@ -1578,7 +1572,7 @@ export default function GlowUpAI() {
                 <br />
                 préoccupation ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {AISSELLES_MAIN_CONCERN_OPTIONS.map((t) => (
                   <OptionCircle
                     key={t}
@@ -1619,7 +1613,7 @@ export default function GlowUpAI() {
               <h2 className="text-white text-2xl font-semibold">
                 Votre peau a les pores:
               </h2>
-              <div className="flex gap-6">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {PORES.map((t) => (
                   <OptionCircle
                     key={t}
@@ -1666,7 +1660,7 @@ export default function GlowUpAI() {
                   ? "Votre cou / décolleté est sujet à:"
                   : "Votre peau est sujette à:"}
               </h2>
-              <div className="flex gap-6 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {(getZoneConfig(answers.zone).concernOptions ||
                   CONCERN_OPTIONS
                 ).map((t) => (
@@ -1709,7 +1703,7 @@ export default function GlowUpAI() {
                 <br />
                 pour votre peau ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {ROUTINE_OPTIONS.map((opt) => {
                   const label =
                     getZoneConfig(answers.zone).routineLabels?.[opt.key] ||
@@ -1755,7 +1749,7 @@ export default function GlowUpAI() {
                 <br />
                 vous inspire ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {STYLE_OPTIONS.map((s) => (
                   <OptionCircle
                     key={s.key}
@@ -1803,7 +1797,7 @@ export default function GlowUpAI() {
                 <br />
                 vos produits ?
               </h2>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="grid grid-cols-2 gap-2.5 w-full">
                 {BUDGET_OPTIONS.map((b) => (
                   <OptionCircle
                     key={b.key}
