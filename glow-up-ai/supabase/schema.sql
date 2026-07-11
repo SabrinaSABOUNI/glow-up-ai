@@ -55,6 +55,9 @@ create table if not exists quiz_answers (
   format      text,
   zone        text,
   budget      text,
+  texture         text,
+  transpiration   text,
+  main_concern    text,
   updated_at  timestamptz default now()
 );
 
@@ -146,5 +149,8 @@ create policy "Le contenu d'un magasin est visible par tous"
 --   alter table quiz_answers add column if not exists zone text;
 --   alter table products add column if not exists ean text;
 --   alter table quiz_answers add column if not exists budget text;
+--   alter table quiz_answers add column if not exists texture text;
+--   alter table quiz_answers add column if not exists transpiration text;
+--   alter table quiz_answers add column if not exists main_concern text;
 --   (puis relance tout le bloc "4) Magasins partenaires" ci-dessus si tu
 --   n'avais pas encore les tables stores / store_products)

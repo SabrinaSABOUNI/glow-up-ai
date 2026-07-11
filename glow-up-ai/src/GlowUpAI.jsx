@@ -150,18 +150,97 @@ const QUICK_CONCERN_OPTIONS = [
   "Taches",
   "Excès de sébum",
 ];
-const ROUTINE_OPTIONS = [
-  "Traitements et Soins",
-  "Nettoyage et Démaquillage",
-  "Hydratation et Protection",
+// Préoccupations spécifiques aux pieds (aucune des préoccupations visage
+// n'a de sens ici — c'était le vrai trou laissé dans le catalogue jusqu'ici).
+const PIEDS_CONCERN_OPTIONS = [
+  "Callosités / talons secs",
+  "Crevasses",
+  "Mycoses",
+  "Odeurs",
 ];
 
-// Choix d'entrée : diagnostic peau complet, ou raccourci par type de produit
+// Idem pour les mains
+const MAINS_CONCERN_OPTIONS = [
+  "Sécheresse / gerçures",
+  "Signes de l'âge",
+  "Ongles fragiles",
+  "Mains abîmées",
+];
+
+// Idem pour le contour des yeux
+const YEUX_CONCERN_OPTIONS = ["Cernes", "Poches", "Rides / ridules"];
+
+// Idem pour le cou/décolleté (seules Rides et Taches ont du sens ici avec
+// notre catalogue actuel — pas d'acné/points noirs/sébum au cou)
+const COU_CONCERN_OPTIONS = ["Rides", "Taches"];
+
+// Nez et zone T : les 3 options du diagnostic complet visage de base sont
+// trop limitées pour cette zone (nos produits ciblent aussi sébum/taches)
+const ZONE_T_CONCERN_OPTIONS = [
+  "L'acnés",
+  "Points noirs",
+  "Rougeurs",
+  "Excès de sébum",
+  "Taches",
+];
+
+// Aisselles : diagnostic plus riche (type + texture + transpiration en 3
+// écrans distincts), la notion de "préoccupations" générique n'est plus
+// vraiment nécessaire une fois ces 3 dimensions couvertes.
+const AISSELLES_TYPE_OPTIONS = [
+  "Normales",
+  "Sensibilisée",
+  "Sujettes aux poils incarnés",
+  "Avec des taches pigmentaires",
+];
+const AISSELLES_TEXTURE_OPTIONS = [
+  "Lisse",
+  "Rugueuse",
+  "Granuleuse",
+  "Épaissie",
+  "Avec des irrégularités de texture",
+];
+const AISSELLES_TRANSPIRATION_OPTIONS = [
+  "Sèche",
+  "Moite",
+  "Sujette à une transpiration importante",
+  "Sujette aux odeurs",
+];
+// Préoccupation PRINCIPALE (choix unique, différent des 3 écrans précédents
+// qui décrivent l'état général) — ce que la personne veut résoudre en priorité.
+const AISSELLES_MAIN_CONCERN_OPTIONS = [
+  "Pigmentation",
+  "Transpiration",
+  "Rasage / Épilation",
+  "Irritations / Rougeurs",
+  "Odeurs",
+];
+
+// Catégories de routine : clé stable (utilisée par le moteur de matching et
+// alignée sur `categories` dans catalog.js) + libellé, qui peut être
+// surchargé par zone via ZONE_CONFIG (ex. pieds : "Nettoyage et Démaquillage"
+// n'a pas de sens, on préfère juste "Nettoyage").
+const ROUTINE_OPTIONS = [
+  { key: "traitement", label: "Traitements et Soins" },
+  { key: "nettoyage", label: "Nettoyage et Démaquillage" },
+  { key: "hydratation", label: "Hydratation et Protection" },
+];
+
+// Choix d'entrée : diagnostic peau complet, ou raccourci par type de produit.
+// "Baume" est pertinent pour les soins mains/pieds ; "Sérum"/"Lotion" n'y ont
+// pas vraiment leur place (voir ZONE_CONFIG.pieds.formatOptions).
 const FORMAT_OPTIONS = [
   { key: "serum", label: "Sérum", emoji: "💧" },
   { key: "creme", label: "Crème", emoji: "🫙" },
   { key: "gel", label: "Gel", emoji: "🧴" },
   { key: "lotion", label: "Lotion", emoji: "🍶" },
+  { key: "baume", label: "Baume", emoji: "🧈" },
+  { key: "patch", label: "Patch", emoji: "🩹" },
+  { key: "scrub", label: "Gommage", emoji: "✨" },
+  { key: "huile", label: "Huile", emoji: "🫒" },
+  { key: "rollon", label: "Roll-on", emoji: "🧊" },
+  { key: "stick", label: "Stick", emoji: "🖊️" },
+  { key: "spray", label: "Spray", emoji: "💨" },
 ];
 
 // Zone du corps/visage à traiter
@@ -190,6 +269,74 @@ const STYLE_OPTIONS = [
   { key: "coreenne", label: "Routine Coréenne", emoji: "🌸" },
   { key: "age_perfect", label: "Age Perfect", emoji: "⏳" },
 ];
+
+// ------------------------------------------------------------------
+// Parcours adaptatif par zone : quels écrans du diagnostic complet on
+// saute, et quelles options changent, selon la zone choisie en premier.
+// Les zones absentes de cet objet gardent le comportement par défaut
+// (visage, zone T, yeux, cou, aisselles — pour l'instant).
+// ------------------------------------------------------------------
+const ZONE_CONFIG = {
+  pieds: {
+    skipScreens: ["age", "tone", "style"],
+    typeLabel: "Votre peau des pieds a tendance à être:",
+    typeOptions: ["Normale", "Sèche", "Très sèche"],
+    concernOptions: PIEDS_CONCERN_OPTIONS,
+    routineLabels: { nettoyage: "Nettoyage" },
+    formatOptions: ["creme", "gel", "baume", "huile"],
+  },
+  mains: {
+    // Contrairement aux pieds : âge et style restent pertinents (Guerlain
+    // Abeille Royale est un vrai produit "age_perfect" pour les mains).
+    skipScreens: ["tone"],
+    typeLabel: "Votre peau des mains a tendance à être:",
+    typeOptions: ["Normale", "Sèche", "Très sèche"],
+    concernOptions: MAINS_CONCERN_OPTIONS,
+    routineLabels: { nettoyage: "Nettoyage" },
+    formatOptions: ["creme", "gel", "baume", "huile"],
+  },
+  yeux: {
+    // Âge ET carnation gardés ici (contrairement aux pieds/mains) : les 4
+    // produits de cette zone sont fortement liés à l'âge/l'apparence.
+    skipScreens: [],
+    typeLabel: "Votre peau autour des yeux a tendance à être:",
+    typeOptions: ["Normale", "Sèche", "Déshydratée"],
+    concernOptions: YEUX_CONCERN_OPTIONS,
+    routineLabels: { nettoyage: "Démaquillant yeux" },
+    formatOptions: ["serum", "creme"],
+  },
+  cou: {
+    // Âge, carnation ET style tous gardés (utile même si un seul produit
+    // couvre cette zone pour l'instant, en prévision d'un catalogue élargi).
+    skipScreens: [],
+    typeLabel: "Votre peau du cou / décolleté a tendance à être:",
+    typeOptions: ["Normale", "Fine", "Mature"],
+    concernOptions: COU_CONCERN_OPTIONS,
+    formatOptions: ["creme", "serum", "gel", "huile"],
+  },
+  zone_t: {
+    // Très proche du visage par défaut (nos 4 produits de cette zone sont
+    // aussi tagués "visage") : on ne touche qu'aux préoccupations, élargies
+    // pour couvrir sébum/taches. Pas de restriction de format (tous les
+    // formats restent disponibles, y compris patch/gommage).
+    skipScreens: [],
+    concernOptions: ZONE_T_CONCERN_OPTIONS,
+  },
+  aisselles: {
+    // Âge et style retirés (pas de lien établi avec ce type de soin) ;
+    // "concerns" retiré aussi car type + texture + transpiration couvrent
+    // déjà largement le diagnostic pour cette zone, sans redondance.
+    skipScreens: ["age", "style", "concerns"],
+    typeLabel: "Vos aisselles ont tendance à être:",
+    typeOptions: AISSELLES_TYPE_OPTIONS,
+    routineLabels: { nettoyage: "Nettoyage" },
+    formatOptions: ["creme", "gel", "rollon", "stick", "spray"],
+  },
+};
+
+function getZoneConfig(zoneKey) {
+  return ZONE_CONFIG[zoneKey] || {};
+}
 
 // Routine step counts + labels vary by style (Korean = plus d'étapes, Age Perfect = ciblé anti-âge)
 const ROUTINE_META = {
@@ -296,6 +443,28 @@ const QUIZ_STEPS = [
   "budget",
 ];
 
+/**
+ * Calcule le prochain écran du diagnostic complet, en tenant compte :
+ * - de la règle déjà en place (pores uniquement pour visage/zone T),
+ * - des écrans explicitement sautés pour la zone choisie (ZONE_CONFIG).
+ * `current` à `null` = on cherche le tout premier écran du parcours pour
+ * cette zone (utilisé par l'écran "zone" lui-même).
+ */
+function getNextQuizStep(current, zoneKey) {
+  const cfg = getZoneConfig(zoneKey);
+  const skip = cfg.skipScreens || [];
+  const startIdx = current ? QUIZ_STEPS.indexOf(current) + 1 : 0;
+  for (let i = startIdx; i < QUIZ_STEPS.length; i++) {
+    const step = QUIZ_STEPS[i];
+    if (step === "pores" && !(zoneKey === "visage" || zoneKey === "zone_t")) {
+      continue;
+    }
+    if (skip.includes(step)) continue;
+    return step;
+  }
+  return "congrats";
+}
+
 export default function GlowUpAI() {
   const [history, setHistory] = useState(["landing"]);
   const screen = history[history.length - 1];
@@ -315,6 +484,9 @@ export default function GlowUpAI() {
       format: "",
       zone: "",
       budget: "",
+      texture: "",
+      transpiration: "",
+      mainConcern: "",
       entryPath: "",
       firstName: "Camille",
     });
@@ -331,6 +503,9 @@ export default function GlowUpAI() {
     format: "",
     zone: "",
     budget: "",
+    texture: "",
+    transpiration: "",
+    mainConcern: "",
     entryPath: "",
     firstName: "Camille",
   });
@@ -428,6 +603,9 @@ export default function GlowUpAI() {
           format: qa.format || a.format,
           zone: qa.zone || a.zone,
           budget: qa.budget || a.budget,
+          texture: qa.texture || a.texture,
+          transpiration: qa.transpiration || a.transpiration,
+          mainConcern: qa.main_concern || a.mainConcern,
         }));
       }
       const { data: favs } = await supabase
@@ -459,6 +637,9 @@ export default function GlowUpAI() {
       format: answers.format || null,
       zone: answers.zone || null,
       budget: answers.budget || null,
+      texture: answers.texture || null,
+      transpiration: answers.transpiration || null,
+      main_concern: answers.mainConcern || null,
       updated_at: new Date().toISOString(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -912,7 +1093,11 @@ export default function GlowUpAI() {
                 <BackArrow onClick={goBack} />
                 <Pill
                   onClick={() =>
-                    goTo(answers.entryPath === "produit" ? "format" : "age")
+                    goTo(
+                      answers.entryPath === "produit"
+                        ? "format"
+                        : getNextQuizStep(null, answers.zone)
+                    )
                   }
                   className="flex-1 text-center"
                 >
@@ -1102,7 +1287,11 @@ export default function GlowUpAI() {
                 cherchez-vous ?
               </h2>
               <div className="flex gap-4 flex-wrap justify-center">
-                {FORMAT_OPTIONS.map((f) => (
+                {FORMAT_OPTIONS.filter((f) =>
+                  getZoneConfig(answers.zone).formatOptions
+                    ? getZoneConfig(answers.zone).formatOptions.includes(f.key)
+                    : true
+                ).map((f) => (
                   <OptionCircle
                     key={f.key}
                     label={f.label}
@@ -1142,7 +1331,9 @@ export default function GlowUpAI() {
                 souhaitez-vous traiter ?
               </h2>
               <div className="flex gap-4 flex-wrap justify-center">
-                {QUICK_CONCERN_OPTIONS.map((t) => (
+                {(getZoneConfig(answers.zone).concernOptions ||
+                  QUICK_CONCERN_OPTIONS
+                ).map((t) => (
                   <OptionCircle
                     key={t}
                     label={t}
@@ -1165,7 +1356,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("tone")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo(getNextQuizStep("age", answers.zone))} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>
@@ -1200,7 +1391,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("type")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo(getNextQuizStep("tone", answers.zone))} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>
@@ -1242,9 +1433,9 @@ export default function GlowUpAI() {
                   <Pill
                     onClick={() =>
                       goTo(
-                        answers.zone === "visage" || answers.zone === "zone_t"
-                          ? "pores"
-                          : "concerns"
+                        answers.zone === "aisselles"
+                          ? "aisselles_texture"
+                          : getNextQuizStep("type", answers.zone)
                       )
                     }
                     className="flex-1 text-center"
@@ -1261,17 +1452,143 @@ export default function GlowUpAI() {
                 <span className="text-white text-6xl font-bold">T</span>
               </div>
               <h2 className="text-white text-2xl font-semibold">
-                Votre peau a tendance à être:
+                {getZoneConfig(answers.zone).typeLabel ||
+                  "Votre peau a tendance à être:"}
               </h2>
               <div className="flex gap-6">
-                {SKIN_TYPES.map((t) => (
+                {(getZoneConfig(answers.zone).typeOptions || SKIN_TYPES).map(
+                  (t) => (
+                    <OptionCircle
+                      key={t}
+                      label={t}
+                      selected={answers.type === t}
+                      onClick={() => setAnswers((a) => ({ ...a, type: t }))}
+                    >
+                      <Sun size={26} className="text-white" />
+                    </OptionCircle>
+                  )
+                )}
+              </div>
+            </div>
+          </ScreenShell>
+        )}
+
+        {screen === "aisselles_texture" && (
+          <ScreenShell
+            gradient={GRAD.sage}
+            top={<Logo />}
+            bottom={
+              <div className="flex items-center gap-4">
+                <BackArrow onClick={goBack} />
+                <Pill
+                  onClick={() => goTo("aisselles_transpiration")}
+                  className="flex-1 text-center"
+                >
+                  page suivante
+                </Pill>
+              </div>
+            }
+          >
+            <div className="flex flex-col items-center text-center gap-8 mt-6">
+              <div className="w-52 h-52 rounded-full bg-white/20 border-4 border-white/30 flex items-center justify-center">
+                <span className="text-white text-4xl">🤲</span>
+              </div>
+              <h2 className="text-white text-2xl font-semibold">
+                Texture :
+              </h2>
+              <div className="flex gap-4 flex-wrap justify-center">
+                {AISSELLES_TEXTURE_OPTIONS.map((t) => (
                   <OptionCircle
                     key={t}
                     label={t}
-                    selected={answers.type === t}
-                    onClick={() => setAnswers((a) => ({ ...a, type: t }))}
+                    selected={answers.texture === t}
+                    onClick={() => setAnswers((a) => ({ ...a, texture: t }))}
                   >
-                    <Sun size={26} className="text-white" />
+                    <Sun size={22} className="text-white" />
+                  </OptionCircle>
+                ))}
+              </div>
+            </div>
+          </ScreenShell>
+        )}
+
+        {screen === "aisselles_transpiration" && (
+          <ScreenShell
+            gradient={GRAD.teal}
+            top={<Logo />}
+            bottom={
+              <div className="flex items-center gap-4">
+                <BackArrow onClick={goBack} />
+                <Pill
+                  onClick={() => goTo("aisselles_concern")}
+                  className="flex-1 text-center"
+                >
+                  page suivante
+                </Pill>
+              </div>
+            }
+          >
+            <div className="flex flex-col items-center text-center gap-8 mt-6">
+              <div className="w-52 h-52 rounded-full bg-white/20 border-4 border-white/30 flex items-center justify-center">
+                <span className="text-white text-4xl">💧</span>
+              </div>
+              <h2 className="text-white text-2xl font-semibold">
+                Transpiration :
+              </h2>
+              <div className="flex gap-4 flex-wrap justify-center">
+                {AISSELLES_TRANSPIRATION_OPTIONS.map((t) => (
+                  <OptionCircle
+                    key={t}
+                    label={t}
+                    selected={answers.transpiration === t}
+                    onClick={() =>
+                      setAnswers((a) => ({ ...a, transpiration: t }))
+                    }
+                  >
+                    <Sun size={22} className="text-white" />
+                  </OptionCircle>
+                ))}
+              </div>
+            </div>
+          </ScreenShell>
+        )}
+
+        {screen === "aisselles_concern" && (
+          <ScreenShell
+            gradient={GRAD.pink}
+            top={<Logo />}
+            bottom={
+              <div className="flex items-center gap-4">
+                <BackArrow onClick={goBack} />
+                <Pill
+                  onClick={() => goTo(getNextQuizStep("type", answers.zone))}
+                  className="flex-1 text-center"
+                >
+                  page suivante
+                </Pill>
+              </div>
+            }
+          >
+            <div className="flex flex-col items-center text-center gap-8 mt-6">
+              <div className="w-52 h-52 rounded-full bg-white/20 border-4 border-white/30 flex items-center justify-center">
+                <span className="text-white text-4xl">🎯</span>
+              </div>
+              <h2 className="text-white text-2xl font-semibold leading-tight">
+                Quelle est votre principale
+                <br />
+                préoccupation ?
+              </h2>
+              <div className="flex gap-4 flex-wrap justify-center">
+                {AISSELLES_MAIN_CONCERN_OPTIONS.map((t) => (
+                  <OptionCircle
+                    key={t}
+                    label={t}
+                    selected={answers.mainConcern === t}
+                    onClick={() =>
+                      setAnswers((a) => ({ ...a, mainConcern: t }))
+                    }
+                  >
+                    <Sun size={22} className="text-white" />
                   </OptionCircle>
                 ))}
               </div>
@@ -1287,7 +1604,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("concerns")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo(getNextQuizStep("pores", answers.zone))} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>
@@ -1326,7 +1643,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("routine")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo(getNextQuizStep("concerns", answers.zone))} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>
@@ -1339,10 +1656,20 @@ export default function GlowUpAI() {
                 <span className="text-white text-4xl">✦</span>
               </div>
               <h2 className="text-white text-2xl font-semibold">
-                Votre peau est sujette à:
+                {answers.zone === "pieds"
+                  ? "Vos pieds sont sujets à:"
+                  : answers.zone === "mains"
+                  ? "Vos mains sont sujettes à:"
+                  : answers.zone === "yeux"
+                  ? "Votre contour des yeux est sujet à:"
+                  : answers.zone === "cou"
+                  ? "Votre cou / décolleté est sujet à:"
+                  : "Votre peau est sujette à:"}
               </h2>
               <div className="flex gap-6 flex-wrap justify-center">
-                {CONCERN_OPTIONS.map((t) => (
+                {(getZoneConfig(answers.zone).concernOptions ||
+                  CONCERN_OPTIONS
+                ).map((t) => (
                   <OptionCircle
                     key={t}
                     label={t}
@@ -1365,7 +1692,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("style")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo(getNextQuizStep("routine", answers.zone))} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>
@@ -1383,16 +1710,21 @@ export default function GlowUpAI() {
                 pour votre peau ?
               </h2>
               <div className="flex gap-4 flex-wrap justify-center">
-                {ROUTINE_OPTIONS.map((t) => (
-                  <OptionCircle
-                    key={t}
-                    label={t}
-                    selected={answers.routine.includes(t)}
-                    onClick={() => toggleMulti("routine", t)}
-                  >
-                    <Sun size={24} className="text-white" />
-                  </OptionCircle>
-                ))}
+                {ROUTINE_OPTIONS.map((opt) => {
+                  const label =
+                    getZoneConfig(answers.zone).routineLabels?.[opt.key] ||
+                    opt.label;
+                  return (
+                    <OptionCircle
+                      key={opt.key}
+                      label={label}
+                      selected={answers.routine.includes(opt.key)}
+                      onClick={() => toggleMulti("routine", opt.key)}
+                    >
+                      <Sun size={24} className="text-white" />
+                    </OptionCircle>
+                  );
+                })}
               </div>
             </div>
           </ScreenShell>
@@ -1406,7 +1738,7 @@ export default function GlowUpAI() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <BackArrow onClick={goBack} />
-                  <Pill onClick={() => goTo("budget")} className="flex-1 text-center">
+                  <Pill onClick={() => goTo(getNextQuizStep("style", answers.zone))} className="flex-1 text-center">
                     page suivante
                   </Pill>
                 </div>

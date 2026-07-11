@@ -172,24 +172,53 @@ const CONCERN_MAP = {
   Rides: "rides",
   Taches: "taches",
   "Excès de sébum": "exces_sebum",
+  // Préoccupations spécifiques pieds
+  "Callosités / talons secs": "callosites",
+  Crevasses: "crevasses",
+  Mycoses: "mycoses",
+  Odeurs: "odeurs",
+  // Préoccupations spécifiques mains
+  "Sécheresse / gerçures": "secheresse",
+  "Signes de l'âge": "rides", // réutilise "rides", même concept que pour le visage
+  "Ongles fragiles": "ongles",
+  "Mains abîmées": "secheresse", // même famille que "sécheresse/gerçures"
+  // Préoccupations spécifiques contour des yeux
+  Cernes: "cernes",
+  Poches: "poches",
+  "Rides / ridules": "rides",
 };
 const CATEGORY_MAP = {
   "Traitements et Soins": "traitement",
   "Nettoyage et Démaquillage": "nettoyage",
   "Hydratation et Protection": "hydratation",
 };
-const TYPE_MAP = { Grasse: "grasse", Sèche: "seche", Mixte: "mixte" };
+const TYPE_MAP = {
+  Grasse: "grasse",
+  Sèche: "seche",
+  Mixte: "mixte",
+  // Variante pieds/mains (options différentes pour ces zones)
+  Normale: "normale",
+  "Très sèche": "tres_seche",
+  // Variante contour des yeux
+  Déshydratée: "deshydratee",
+  // Variante cou/décolleté
+  Fine: "fine",
+  Mature: "mature",
+};
 const PORES_MAP = { Dilatés: "dilates", Normaux: "normaux" };
 
 function normalizeAnswers(answers) {
   return {
     concerns: (answers.concerns || []).map((c) => CONCERN_MAP[c] || c),
+    // answers.routine contient déjà des clés stables ("nettoyage", "traitement",
+    // "hydratation") depuis le refactor multi-zone — CATEGORY_MAP reste en
+    // repli si jamais une ancienne valeur en toutes lettres arrive encore.
     categories: (answers.routine || []).map((c) => CATEGORY_MAP[c] || c),
     type: TYPE_MAP[answers.type] || answers.type,
     pores: PORES_MAP[answers.pores] || answers.pores,
     style: answers.style,
     age: answers.age,
-    // Déjà normalisé côté UI : "serum" | "creme" | "gel" | "lotion" | undefined
+    // Déjà normalisé côté UI : "serum" | "creme" | "gel" | "lotion" | "baume" | undefined
     format: answers.format || null,
     // Déjà normalisé côté UI : "visage" | "yeux" | "zone_t" | "cou" | "mains" | "pieds"
     zone: answers.zone || null,
