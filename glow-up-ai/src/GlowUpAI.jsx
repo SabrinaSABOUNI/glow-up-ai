@@ -116,12 +116,20 @@ function ScreenShell({ gradient, children, top, bottom }) {
   );
 }
 
-function OptionCircle({ label, selected, onClick, children }) {
+function OptionCircle({ label, selected, onClick, children, disabled = false }) {
   return (
     <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3.5 text-center transition active:scale-95 ${
-        selected ? "border-white bg-white/25" : "border-white/30 bg-white/10"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3.5 text-center transition ${
+        disabled
+          ? "border-white/10 bg-white/5 opacity-40 cursor-not-allowed"
+          : `active:scale-95 ${
+              selected
+                ? "border-white bg-white/25"
+                : "border-white/30 bg-white/10"
+            }`
       }`}
     >
       <div className="flex items-center justify-center h-7">{children}</div>
@@ -247,6 +255,10 @@ const ZONE_OPTIONS = [
   { key: "mains", label: "Mains", emoji: "🤲" },
   { key: "pieds", label: "Pieds", emoji: "🦶" },
 ];
+
+// Zones temporairement désactivées le temps de bien travailler le parcours
+// "peau" (visage/yeux/zone T/cou) — restent visibles mais non cliquables.
+const DISABLED_ZONES = ["aisselles", "mains", "pieds"];
 
 // Budget : signal clé pour la pertinence commerciale des recommandations
 // (segmentation utile pour l'affiliation/partenariats), pas juste un critère
@@ -1110,16 +1122,23 @@ export default function GlowUpAI() {
                 traiter ?
               </h2>
               <div className="grid grid-cols-2 gap-2.5 w-full">
-                {ZONE_OPTIONS.map((z) => (
-                  <OptionCircle
-                    key={z.key}
-                    label={z.label}
-                    selected={answers.zone === z.key}
-                    onClick={() => setAnswers((a) => ({ ...a, zone: z.key }))}
-                  >
-                    <span className="text-2xl">{z.emoji}</span>
-                  </OptionCircle>
-                ))}
+                {ZONE_OPTIONS.map((z) => {
+                  const disabled = DISABLED_ZONES.includes(z.key);
+                  return (
+                    <OptionCircle
+                      key={z.key}
+                      label={disabled ? `${z.label} (bientôt)` : z.label}
+                      selected={answers.zone === z.key}
+                      disabled={disabled}
+                      onClick={() =>
+                        !disabled &&
+                        setAnswers((a) => ({ ...a, zone: z.key }))
+                      }
+                    >
+                      <span className="text-2xl">{z.emoji}</span>
+                    </OptionCircle>
+                  );
+                })}
               </div>
             </div>
           </ScreenShell>
